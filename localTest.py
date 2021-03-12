@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import json
-from scipy.fftpack import fft, fftfreq
 
 
 def getData(filename):
@@ -97,11 +96,53 @@ def heartbeatTimes(data):
     v = data[:,2]
     index = findPeaks(v)
     return t[findPeaks]
-    
-    
+
+
+def duration(data):
+    time = data[:,1]
+    ecg_duration = max(time)-min(time)
+    return ecg_duration
+
+
+def numHeartbeats(data):
+    v = data[:,2]
+    index = findPeaks(v)
+    heartbeats = len(index)
+    return heartbeats
+
+
+def heartrate(data):
+    heartbeats = numHeartbeats(data)
+    ecg_duration = duration(data)
+    bpm = heartbeats/ecg_duration*60
+    return bpm
+
+
+def voltageExtremes(data):
+    v = data[:,2]
+    max_voltage = max(v)
+    min_voltage = min(v)
+    extreme_voltages = np.stack((max_voltage,min_voltage))
+
+
+def makeDict(data,filename):
+    metrics = {
+        "Duration": duration(data),
+        "Maximum Voltage": voltageExtremes(data)[1],
+        "Minimum Voltage": voltageExtremes(data)[2],
+        "Number of Heartbeats": numHeartbeats(data),
+        "Mean Heartrate (bpm)": heartrate(data),
+        "Heartbeat Instances": heartbeatTimes(data)}
+    filename = filename + ".json"
+    out_file = open(filename,"w")
+    json.dump(metrics,out_file)
+    out_file.close()
+
+
 for i in range(32):
     i = i + 1
     filename = "test_data" + str(i) + ".csv"    
     test_data = getData(filename)
     filt_data = frequencyFiltering(test_data)
     plotECG(filt_data)
+    makeDict(test_data, filename-".csv")
